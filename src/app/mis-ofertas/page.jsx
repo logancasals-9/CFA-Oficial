@@ -50,6 +50,11 @@ export default async function PaginaMisOfertas() {
             <p className={styles.itemDetalle}>
               {oferta.categoria} · {oferta.provincia}
             </p>
+            {oferta.descripcion && (
+              <p className={styles.itemDescripcion}>
+                {oferta.descripcion}
+              </p>
+            )}
             <div className={styles.itemPie}>
               <span className={styles.conteo}>
                 {oferta.total_postulantes === 1
@@ -58,6 +63,12 @@ export default async function PaginaMisOfertas() {
               </span>
               <div className={styles.itemAcciones}>
                 <BotonesEstadoOferta ofertaId={oferta.id} estado={oferta.estado} />
+                <Link
+                  href={`/mis-ofertas/${oferta.id}/editar`}
+                  className={styles.enlaceEditar}
+                >
+                  Editar oferta
+                </Link>
                 <Link
                   href={`/mis-ofertas/${oferta.id}/postulantes`}
                   className={styles.enlacePostulantes}

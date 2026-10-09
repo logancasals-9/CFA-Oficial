@@ -55,6 +55,72 @@ export async function crearOferta(
   redirect("/mis-ofertas");
 }
 
+/* El club edita los datos de una oferta propia (descripción, categoría, etc.). */
+export async function editarOferta(
+  _estadoPrevio,
+  datosFormulario,
+) {
+  const supabase = await crearClienteServidor();
+  const usuario = await obtenerUsuarioConRol(supabase);
+
+  if (usuario?.rol !== "club") {
+    return { error: "Tenés que iniciar sesión como club para editar una oferta." };
+  }
+
+  const ofertaId = String(datosFormulario.get("ofertaId") ?? "");
+  if (!ofertaId) {
+    return { error: "Identificador de oferta inválido." };
+  }
+
+  const { data: oferta } = await supabase
+    .from("ofertas_laborales")
+    .select("id, club_id, estado")
+    .eq("id", ofertaId)
+    .maybeSingle();
+
+  if (!oferta || oferta.club_id !== usuario.id) {
+    return { error: "Esta oferta no pertenece a tu club." };
+  }
+
+  const puestoBuscado = String(datosFormulario.get("puestoBuscado") ?? "");
+  const categoria = String(datosFormulario.get("categoria") ?? "").trim();
+  const tipoContrato = String(datosFormulario.get("tipoContrato") ?? "");
+  const provincia = String(datosFormulario.get("provincia") ?? "").trim();
+  const descripcion = String(datosFormulario.get("descripcion") ?? "").trim();
+  const posicionJuego = puestoBuscado === "jugador"
+    ? (String(datosFormulario.get("posicionJuego") ?? "").trim() || null)
+    : null;
+
+  if (!puestoBuscado || !categoria || !tipoContrato || !provincia || !descripcion) {
+    return { error: "Completá todos los campos obligatorios de la oferta." };
+  }
+
+  const { error } = await supabase
+    .from("ofertas_laborales")
+    .update({
+      puesto_buscado: puestoBuscado,
+      posicion_juego: posicionJuego,
+      categoria,
+      tipo_contrato: tipoContrato,
+      provincia,
+      descripcion,
+      actualizada_en: new Date().toISOString(),
+    })
+    .eq("id", ofertaId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/mis-ofertas");
+  revalidatePath("/ofertas");
+  revalidatePath(`/ofertas/${ofertaId}`);
+  revalidatePath(`/mis-ofertas/${ofertaId}/editar`);
+  revalidatePath("/perfil-publico-club");
+
+  redirect("/mis-ofertas");
+}
+
 /*El club edita el estado de una oferta propia (pausar, cerrar, reabrir). */
 export async function cambiarEstadoDeOferta(ofertaId, nuevoEstado) {
   const supabase = await crearClienteServidor();
